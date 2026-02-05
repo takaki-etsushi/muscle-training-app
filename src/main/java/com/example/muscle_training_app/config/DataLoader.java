@@ -26,9 +26,9 @@ public class DataLoader implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         // データが既に存在する場合は何もしない
-//        if (bodyPartRepository.count() > 0) {
-//            return;
-//        }
+        if (bodyPartRepository.count() > 0) {
+            return;
+        }
 
         System.out.println("--- 初期データの投入を開始します ---");
 

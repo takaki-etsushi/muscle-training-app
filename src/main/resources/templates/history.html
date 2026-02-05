@@ -2,94 +2,149 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>トレーニング履歴</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/style.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* グラフエリアは初期状態では非表示にする場合（今回はJSで制御） */
         .view-section { display: none; }
         .view-section.active { display: block; }
     </style>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="/css/style.css" rel="stylesheet">
 </head>
-<body class="bg-light">
+<body>
 
-<nav class="navbar navbar-dark bg-dark mb-4">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="/">筋トレ管理アプリ</a>
-        <a class="btn btn-outline-light btn-sm" href="/">ホームに戻る</a>
+<nav class="navbar navbar-dark bg-dark mb-4 sticky-top">
+    <div class="container">
+        <a class="navbar-brand" href="/">＜ 戻る</a>
+        <span class="navbar-text text-white fw-bold">トレーニング履歴</span>
     </div>
 </nav>
 
-<div class="container">
-    <h2 class="mb-4">トレーニング履歴</h2>
+<div class="container pb-5">
 
-    <div class="btn-group mb-4" role="group">
-        <button type="button" class="btn btn-outline-primary active" id="btnList" onclick="switchView('list')">リスト表示</button>
-        <button type="button" class="btn btn-outline-primary" id="btnGraph" onclick="switchView('graph')">グラフ表示</button>
-    </div>
+    <div class="d-grid gap-2 d-md-block mb-4 text-center">
+        <div class="btn-group w-100" role="group" style="max-width: 500px;">
+            <input type="radio" class="btn-check" name="viewMode" id="btnList" autocomplete="off"
+                   th:checked="${viewMode == 'list'}" onclick="switchView('list')">
+            <label class="btn btn-outline-primary btn-lg" for="btnList">📝 履歴リスト</label>
 
-    <div class="card shadow-sm">
-        <div class="card-body">
-
-            <div id="listView" class="view-section active">
-                <table class="table table-striped table-hover" th:if="${not #lists.isEmpty(details)}">
-                    <thead class="table-dark">
-                    <tr>
-                        <th>日付</th>
-                        <th>種目</th>
-                        <th>重量</th>
-                        <th>回数</th>
-                        <th>セット数</th>
-                        <th>メモ</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr th:each="detail : ${details}">
-                        <td th:text="${detail.memo.training.trainingDay}">2023-01-01</td>
-                        <td th:text="${detail.memo.exercise.exerciseName}">ベンチプレス</td>
-                        <td th:text="${detail.weight} + ' kg'">60 kg</td>
-                        <td th:text="${detail.rep} + '回'">10回</td>
-                        <td th:text="${detail.setCount} + 'セット'">3セット</td>
-                        <td th:text="${detail.memo.memoContent}">メモ内容</td>
-                    </tr>
-                    </tbody>
-                </table>
-                <div class="alert alert-info" th:if="${#lists.isEmpty(details)}">
-                    まだ記録がありません。<a href="/training/record" class="alert-link">最初のトレーニング</a>を記録しましょう！
-                </div>
-            </div>
-
-            <div id="graphView" class="view-section">
-                <h5 class="card-title text-center mb-4">ボリューム推移（過去7日間）</h5>
-                <canvas id="historyChart"></canvas>
-            </div>
-
+            <input type="radio" class="btn-check" name="viewMode" id="btnGraph" autocomplete="off"
+                   th:checked="${viewMode == 'graph'}" onclick="switchView('graph')">
+            <label class="btn btn-outline-primary btn-lg" for="btnGraph">📈 グラフ分析</label>
         </div>
     </div>
+
+    <div id="listView" class="view-section" th:classappend="${viewMode == 'list'} ? 'active'">
+        <div class="card mb-3">
+            <div class="card-body">
+                <form th:action="@{/training/history}" method="get" class="row g-2 align-items-center">
+                    <input type="hidden" name="viewMode" value="list">
+                    <input type="hidden" name="period" th:value="${currentPeriod}">
+                    <input type="hidden" name="graphExerciseId" th:value="${currentGraphExerciseId}">
+
+                    <div class="col-8">
+                        <select class="form-select form-select-lg" name="listExerciseId" onchange="this.form.submit()">
+                            <option value="">全ての種目を表示</option>
+                            <option th:each="ex : ${exercises}"
+                                    th:value="${ex.exerciseId}"
+                                    th:text="${ex.exerciseName}"
+                                    th:selected="${ex.exerciseId == currentListExerciseId}">
+                            </option>
+                        </select>
+                    </div>
+                    <div class="col-4">
+                        <a href="/training/history?viewMode=list" class="btn btn-outline-secondary btn-lg w-100">クリア</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="list-group shadow-sm">
+            <div th:each="detail : ${details}" class="list-group-item p-3">
+                <div class="d-flex w-100 justify-content-between align-items-center mb-1">
+                    <h5 class="mb-1 fw-bold" th:text="${detail.memo.exercise.exerciseName}">種目名</h5>
+                    <small class="text-muted" th:text="${detail.memo.training.trainingDay}">日付</small>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="fs-5">
+                        <span class="badge bg-light text-dark border me-1">
+                            <span th:text="${detail.weight}"></span>kg
+                        </span>
+                        x <span th:text="${detail.rep}"></span>
+                        <span class="fs-6 text-muted">x <span th:text="${detail.setCount}"></span>set</span>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <a th:href="@{/training/history/edit/{id}(id=${detail.detailId})}" class="btn btn-outline-secondary btn-sm">
+                            🖊️
+                        </a>
+                        <form th:action="@{/training/history/delete/{id}(id=${detail.detailId})}" method="post"
+                              onsubmit="return confirm('本当に削除しますか？');">
+                            <button type="submit" class="btn btn-outline-danger btn-sm">🗑️</button>
+                        </form>
+                    </div>
+                </div>
+                <small class="text-muted" th:if="${detail.memo.memoContent != ''}" th:text="'📝 ' + ${detail.memo.memoContent}"></small>
+            </div>
+
+            <div class="alert alert-info mt-3" th:if="${#lists.isEmpty(details)}">
+                条件に一致する履歴がありません。
+            </div>
+        </div>
+    </div>
+
+    <div id="graphView" class="view-section" th:classappend="${viewMode == 'graph'} ? 'active'">
+        <div class="card shadow-sm">
+            <div class="card-body">
+
+                <form th:action="@{/training/history}" method="get" id="graphForm" class="mb-4">
+                    <input type="hidden" name="viewMode" value="graph">
+                    <input type="hidden" name="listExerciseId" th:value="${currentListExerciseId}">
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">表示データ</label>
+                        <select class="form-select form-select-lg" name="graphExerciseId" onchange="document.getElementById('graphForm').submit()">
+                            <option value="" th:selected="${currentGraphExerciseId == null}">総負荷量 (Volume)</option>
+                            <option th:each="ex : ${exercises}"
+                                    th:value="${ex.exerciseId}"
+                                    th:text="${ex.exerciseName} + ' (最大重量)'"
+                                    th:selected="${ex.exerciseId == currentGraphExerciseId}">
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="btn-group w-100" role="group">
+                        <button type="submit" name="period" value="week" class="btn btn-outline-secondary" th:classappend="${currentPeriod == 'week'} ? 'active'">1週間</button>
+                        <button type="submit" name="period" value="month" class="btn btn-outline-secondary" th:classappend="${currentPeriod == 'month'} ? 'active'">1ヶ月</button>
+                        <button type="submit" name="period" value="year" class="btn btn-outline-secondary" th:classappend="${currentPeriod == 'year'} ? 'active'">1年</button>
+                        <button type="submit" name="period" value="all" class="btn btn-outline-secondary" th:classappend="${currentPeriod == 'all'} ? 'active'">全期間</button>
+                    </div>
+                </form>
+
+                <div style="position: relative; height: 40vh; min-height: 300px; width: 100%;">
+                    <canvas id="historyChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/main.js"></script>
 <script th:inline="javascript">
-    // 1. 切り替え機能
     function switchView(viewName) {
-        // エリアの切り替え
         document.getElementById('listView').classList.remove('active');
         document.getElementById('graphView').classList.remove('active');
         document.getElementById(viewName + 'View').classList.add('active');
-
-        // ボタンの見た目切り替え
-        document.getElementById('btnList').classList.remove('active');
-        document.getElementById('btnGraph').classList.remove('active');
-
-        if(viewName === 'list') {
-            document.getElementById('btnList').classList.add('active');
-        } else {
-            document.getElementById('btnGraph').classList.add('active');
-        }
     }
 
-    // 2. グラフ描画
+    const isWeightGraph = /*[[${currentGraphExerciseId != null}]]*/ false;
+    const graphLabel = isWeightGraph ? '最大重量 (kg)' : '総負荷量 (kg)';
+    const graphColor = isWeightGraph ? '#dc3545' : '#0d6efd';
+
     const ctx = document.getElementById('historyChart').getContext('2d');
     const labels = /*[[${chartLabels}]]*/ [];
     const dataValues = /*[[${chartValues}]]*/ [];
@@ -99,23 +154,24 @@
         data: {
             labels: labels,
             datasets: [{
-                label: '総負荷量 (kg)',
+                label: graphLabel,
                 data: dataValues,
-                borderColor: 'rgb(54, 162, 235)', // 青色に変更
-                backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                tension: 0.3,
-                fill: true
+                borderColor: graphColor,
+                backgroundColor: graphColor + '33',
+                tension: 0.2,
+                fill: true,
+                pointRadius: 4
             }]
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             scales: {
                 y: { beginAtZero: true }
             }
         }
     });
 </script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="/js/main.js"></script>
+
 </body>
 </html>

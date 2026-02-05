@@ -16,21 +16,29 @@
         <div class="card-header bg-success text-white text-center">
             <h4>新規ユーザー登録</h4>
         </div>
-        <div class="card-body">
+        <div class="card-body p-4 p-md-5">
+            <h3 class="text-center fw-bold mb-4">新規登録</h3>
+
+            <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+
             <form th:action="@{/register}" method="post">
-                <div class="mb-3">
-                    <label for="username" class="form-label">ユーザーID</label>
-                    <input type="text" class="form-control" id="username" name="username" required autofocus>
+                <div class="mb-4">
+                    <label for="username" class="form-label fw-bold">ユーザーID</label>
+                    <input type="text" class="form-control form-control-lg" id="username" name="username" required autofocus>
                 </div>
-                <div class="mb-3">
-                    <label for="password" class="form-label">パスワード</label>
-                    <input type="password" class="form-control" id="password" name="password" required>
+                <div class="mb-4">
+                    <label for="password" class="form-label fw-bold">パスワード</label>
+                    <input type="password" class="form-control form-control-lg" id="password" name="password"
+                           required minlength="5" pattern="^[a-zA-Z0-9]+$"
+                           placeholder="5文字以上の英数字">
+                    <div class="form-text">※5文字以上の半角英数字のみ使用可能です</div>
                 </div>
-                <div class="d-grid">
-                    <button type="submit" class="btn btn-success btn-lg">登録する</button>
+                <div class="d-grid gap-2 mb-4">
+                    <button type="submit" class="btn btn-success btn-lg py-3 fw-bold">登録する</button>
                 </div>
             </form>
-            <div class="mt-3 text-center">
+
+            <div class="text-center">
                 <a href="/login">ログイン画面に戻る</a>
             </div>
         </div>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>トレーニング記録</title>
+    <title>記録の編集</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="/css/style.css" rel="stylesheet">
 </head>
@@ -11,16 +11,17 @@
 
 <nav class="navbar navbar-dark bg-dark mb-4 sticky-top">
     <div class="container">
-        <a class="navbar-brand" href="/">＜ 戻る</a>
-        <span class="navbar-text text-white fw-bold">トレーニング記録</span>
+        <a class="navbar-brand" href="/training/history">＜ キャンセル</a>
+        <span class="navbar-text text-white fw-bold">Edit Record</span>
     </div>
 </nav>
 
 <div class="container" style="max-width: 600px;">
-    <div class="card">
+    <div class="card border-warning"> <div class="card-header bg-warning text-dark fw-bold">記録を修正</div>
         <div class="card-body p-4">
 
-            <form th:action="@{/training/record}" method="post" th:object="${trainingForm}">
+            <form th:action="@{/training/history/update}" method="post" th:object="${trainingForm}">
+                <input type="hidden" name="detailId" th:value="${detailId}">
 
                 <div class="mb-4">
                     <label class="form-label fw-bold">日付</label>
@@ -28,7 +29,7 @@
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label fw-bold">部位で絞り込む</label>
+                    <label class="form-label fw-bold">部位フィルタ</label>
                     <select class="form-select" id="bodyPartSelect">
                         <option value="">全ての種目</option>
                         <option th:each="part : ${bodyParts}"
@@ -39,55 +40,37 @@
 
                 <div class="mb-4">
                     <label class="form-label fw-bold">種目</label>
-                    <div class="input-group">
-                        <select class="form-select form-select-lg" th:field="*{exerciseId}" id="exerciseSelect" required>
-                            <option value="" selected>種目を選択...</option>
-                            <option th:each="ex : ${exercises}"
-                                    th:value="${ex.exerciseId}"
-                                    th:text="${ex.exerciseName}"
-                                    th:data-part-id="${ex.bodyPart.bodyPartId}">
-                            </option>
-                        </select>
-                        <a href="/exercises/add" class="btn btn-outline-dark px-3 d-flex align-items-center">＋</a>
-                    </div>
+                    <select class="form-select form-select-lg" th:field="*{exerciseId}" id="exerciseSelect" required>
+                        <option th:each="ex : ${exercises}"
+                                th:value="${ex.exerciseId}"
+                                th:text="${ex.exerciseName}"
+                                th:data-part-id="${ex.bodyPart.bodyPartId}">
+                        </option>
+                    </select>
                 </div>
 
                 <div class="row g-3 mb-4">
                     <div class="col-4">
                         <label class="form-label fw-bold text-center w-100">重量</label>
-                        <div class="input-group">
-                            <input type="number" class="form-control form-control-lg text-center"
-                                   th:field="*{weight}" placeholder="0"
-                                   required min="0" step="0.5">
-                        </div>
-                        <div class="text-center text-muted small mt-1">kg</div>
+                        <input type="number" class="form-control form-control-lg text-center" th:field="*{weight}" required min="0" step="0.5">
                     </div>
                     <div class="col-4">
                         <label class="form-label fw-bold text-center w-100">回数</label>
-                        <input type="number" class="form-control form-control-lg text-center"
-                               th:field="*{rep}" placeholder="0"
-                               required min="0">
-                        <div class="text-center text-muted small mt-1">reps</div>
+                        <input type="number" class="form-control form-control-lg text-center" th:field="*{rep}" required min="0">
                     </div>
                     <div class="col-4">
                         <label class="form-label fw-bold text-center w-100">セット</label>
-                        <input type="number" class="form-control form-control-lg text-center"
-                               th:field="*{setCount}" value="1"
-                               required min="1">
-                        <div class="text-center text-muted small mt-1">sets</div>
+                        <input type="number" class="form-control form-control-lg text-center" th:field="*{setCount}" required min="1">
                     </div>
                 </div>
 
                 <div class="mb-4">
                     <label class="form-label fw-bold">メモ</label>
-                    <textarea class="form-control" th:field="*{memo}" rows="3" placeholder="調子はどう？"></textarea>
+                    <textarea class="form-control" th:field="*{memo}" rows="3"></textarea>
                 </div>
 
                 <div class="d-grid gap-2">
-                    <button type="submit" class="btn btn-primary btn-lg py-3 fw-bold">
-                        記録して次へ
-                    </button>
-                    <a href="/" class="btn btn-link text-muted">記録を終了してホームへ</a>
+                    <button type="submit" class="btn btn-warning btn-lg py-3 fw-bold">更新する</button>
                 </div>
             </form>
 
@@ -97,26 +80,33 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="/js/main.js"></script>
-
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const bodyPartSelect = document.getElementById('bodyPartSelect');
         const exerciseSelect = document.getElementById('exerciseSelect');
         const allOptions = Array.from(exerciseSelect.querySelectorAll('option'));
+        // 編集時は、現在の種目選択状態を維持したいので初期化処理は注意が必要ですが、
+        // 単純化のため、部位変更時のみ絞り込みを実行するようにします。
 
         bodyPartSelect.addEventListener('change', function() {
             const selectedPartId = this.value;
-            exerciseSelect.innerHTML = '<option value="" selected>種目を選択...</option>';
+            const currentVal = exerciseSelect.value; // 現在の値を保持
+
+            exerciseSelect.innerHTML = ''; // クリア
+
             allOptions.forEach(option => {
-                if (!option.value) return;
                 const partId = option.getAttribute('data-part-id');
                 if (selectedPartId === "" || partId === selectedPartId) {
                     exerciseSelect.appendChild(option);
                 }
             });
+            // もし絞り込み後も現在の値が含まれていれば再選択
+            exerciseSelect.value = currentVal;
+            if(!exerciseSelect.value && exerciseSelect.options.length > 0) {
+                exerciseSelect.value = exerciseSelect.options[0].value;
+            }
         });
     });
 </script>
-
 </body>
 </html>
