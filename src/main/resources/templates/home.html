@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>筋トレ管理アプリ</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<nav class="navbar navbar-dark bg-dark">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="/">筋トレ管理アプリ</a>
+    <form th:action="@{/logout}" method="post">
+      <button class="btn btn-outline-light btn-sm" type="submit">ログアウト</button>
+    </form>
+  </div>
+</nav>
+
+<div class="container mt-4">
+  <h2 class="mb-4">ようこそ、<span th:text="${#authentication.name}">ユーザー</span>さん</h2>
+
+  <div class="row">
+    <div class="col-md-8">
+      <div class="card mb-3">
+        <div class="card-header">最近のトレーニング</div>
+        <div class="card-body">
+          <ul class="list-group list-group-flush" th:if="${not #lists.isEmpty(recentHistory)}">
+            <li class="list-group-item" th:each="h : ${recentHistory}">
+              <span class="badge bg-primary me-2" th:text="${h.memo.training.trainingDay}">日付</span>
+              <strong th:text="${h.memo.exercise.exerciseName}">種目</strong>
+              <span class="ms-2">
+                                <span th:text="${h.weight}">60</span>kg x
+                                <span th:text="${h.rep}">10</span>回 x
+                                <span th:text="${h.setCount}">3</span>セット
+                            </span>
+            </li>
+          </ul>
+          <p class="text-muted mt-3 text-center" th:if="${#lists.isEmpty(recentHistory)}">
+            まだ履歴がありません。
+          </p>
+
+          <div class="d-grid gap-2 mt-3">
+            <a href="/training/record" class="btn btn-primary">今日のトレーニングを記録する</a>
+            <a href="/training/history" class="btn btn-outline-secondary">すべての履歴を見る</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card mb-3 border-primary">
+        <div class="card-header bg-primary text-white">本日の総負荷量</div>
+        <div class="card-body text-center">
+          <h3 class="display-4" th:text="${totalLoad} + ' kg'">0 kg</h3>
+          <p class="text-muted">今日も積み上げましょう！</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

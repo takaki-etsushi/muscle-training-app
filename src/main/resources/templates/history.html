@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>トレーニング履歴</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<nav class="navbar navbar-dark bg-dark mb-4">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/">筋トレ管理アプリ</a>
+        <a class="btn btn-outline-light btn-sm" href="/">ホームに戻る</a>
+    </div>
+</nav>
+
+<div class="container">
+    <h2 class="mb-4">トレーニング履歴</h2>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <table class="table table-striped table-hover" th:if="${not #lists.isEmpty(details)}">
+                <thead class="table-dark">
+                <tr>
+                    <th>日付</th>
+                    <th>種目</th>
+                    <th>重量</th>
+                    <th>回数</th>
+                    <th>セット数</th>
+                    <th>メモ</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="detail : ${details}">
+                    <td th:text="${detail.memo.training.trainingDay}">2023-01-01</td>
+                    <td th:text="${detail.memo.exercise.exerciseName}">ベンチプレス</td>
+                    <td th:text="${detail.weight} + ' kg'">60 kg</td>
+                    <td th:text="${detail.rep} + '回'">10回</td>
+                    <td th:text="${detail.setCount} + 'セット'">3セット</td>
+                    <td th:text="${detail.memo.memoContent}">メモ内容</td>
+                </tr>
+                </tbody>
+            </table>
+
+            <div class="alert alert-info" th:if="${#lists.isEmpty(details)}">
+                まだ記録がありません。<a href="/training/record" class="alert-link">最初のトレーニング</a>を記録しましょう！
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
