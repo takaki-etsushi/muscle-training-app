@@ -11,6 +11,9 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
+import java.util.List;
+
 @Component
 @RequiredArgsConstructor
 public class DataLoader implements CommandLineRunner {
@@ -18,56 +21,94 @@ public class DataLoader implements CommandLineRunner {
     private final BodyPartRepository bodyPartRepository;
     private final ExerciseRepository exerciseRepository;
     private final UsersRepository usersRepository;
-    private final PasswordEncoder passwordEncoder; // ★追加：暗号化用
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public void run(String... args) throws Exception {
         // データが既に存在する場合は何もしない
-        if (bodyPartRepository.count() > 0) {
-            return;
-        }
+//        if (bodyPartRepository.count() > 0) {
+//            return;
+//        }
 
         System.out.println("--- 初期データの投入を開始します ---");
 
-        // ★追加：テストユーザーの作成（暗号化パスワード）
+        // 1. テストユーザー作成
         Users user = new Users();
-        user.setUserId("takaki"); // IDを "takaki" にしましょう
-        user.setUserPass(passwordEncoder.encode("password")); // パスワード "password" を暗号化して保存
+        user.setUserId("takaki");
+        user.setUserPass(passwordEncoder.encode("password"));
         usersRepository.save(user);
-        System.out.println("--- テストユーザー(ID: takaki / PASS: password)を作成しました ---");
 
-        // 1. 部位データの作成
-        BodyPart chest = new BodyPart();
-        chest.setBodyPartId("chest");
-        chest.setBodyPartName("胸");
-        bodyPartRepository.save(chest);
+        // 2. 部位データの作成
+        createBodyPart("chest", "胸");
+        createBodyPart("back", "背中");
+        createBodyPart("legs", "脚");
+        createBodyPart("shoulder", "肩");
+        createBodyPart("arm", "腕");
+        createBodyPart("glutes", "お尻");
+        createBodyPart("abs", "腹筋");
+        createBodyPart("other", "その他");
 
-        BodyPart back = new BodyPart();
-        back.setBodyPartId("back");
-        back.setBodyPartName("背中");
-        bodyPartRepository.save(back);
+        // 3. 種目データの作成
+        // 胸
+        createExercises("chest", Arrays.asList(
+                "ベンチプレス", "インクラインベンチプレス", "デクラインベンチプレス",
+                "ダンベルフライ", "インクラインダンベルフライ", "ケーブルクロスオーバー",
+                "チェストプレス", "ディップス", "プッシュアップ", "ペックデックフライ"
+        ));
 
-        BodyPart legs = new BodyPart();
-        legs.setBodyPartId("legs");
-        legs.setBodyPartName("脚");
-        bodyPartRepository.save(legs);
+        // 背中
+        createExercises("back", Arrays.asList(
+                "デッドリフト", "ベントオーバーロー", "ワンハンドダンベルロー",
+                "ラットプルダウン", "チンニング（懸垂）", "シーテッドロー",
+                "Tバーロー", "インクラインダンベルロー", "ケーブルプルオーバー", "バックエクステンション"
+        ));
 
-        // 2. 種目データの作成
-        Exercise benchPress = new Exercise();
-        benchPress.setExerciseName("ベンチプレス");
-        benchPress.setBodyPart(chest);
-        exerciseRepository.save(benchPress);
+        // 脚
+        createExercises("legs", Arrays.asList(
+                "スクワット", "バーベルスクワット", "レッグプレス", "ランジ",
+                "ブルガリアンスクワット", "レッグエクステンション", "レッグカール",
+                "デッドリフト（脚狙い）", "カーフレイズ", "ヒップスラスト"
+        ));
 
-        Exercise deadlift = new Exercise();
-        deadlift.setExerciseName("デッドリフト");
-        deadlift.setBodyPart(back);
-        exerciseRepository.save(deadlift);
+        // 肩
+        createExercises("shoulder", Arrays.asList(
+                "ショルダープレス", "サイドレイズ", "フロントレイズ", "リアレイズ",
+                "アップライトロー", "アーノルドプレス", "フェイスプル",
+                "ダンベルショルダープレス", "ケーブルサイドレイズ", "オーバーヘッドプレス"
+        ));
 
-        Exercise squat = new Exercise();
-        squat.setExerciseName("スクワット");
-        squat.setBodyPart(legs);
-        exerciseRepository.save(squat);
+        // 腕
+        createExercises("arm", Arrays.asList(
+                "バーベルカール", "EZバーカール", "ダンベルカール", "ハンマーカール",
+                "プリーチャーカール", "インクラインダンベルカール",
+                "トライセプスプレスダウン", "スカルクラッシャー", "ナローベンチプレス", "キックバック"
+        ));
+
+        // お尻
+        createExercises("glutes", Arrays.asList(
+                "ヒップスラスト", "ヒップアブダクション", "ルーマニアンデッドリフト"
+        ));
+
+        // 腹筋とその他はユーザー追加用として、とりあえず代表的なものを1つだけ入れておくか、空にしておく
+        createExercises("abs", Arrays.asList("クランチ", "レッグレイズ", "アブローラー"));
 
         System.out.println("--- 初期データの投入が完了しました ---");
+    }
+
+    private void createBodyPart(String id, String name) {
+        BodyPart part = new BodyPart();
+        part.setBodyPartId(id);
+        part.setBodyPartName(name);
+        bodyPartRepository.save(part);
+    }
+
+    private void createExercises(String bodyPartId, List<String> names) {
+        BodyPart part = bodyPartRepository.findById(bodyPartId).orElseThrow();
+        for (String name : names) {
+            Exercise ex = new Exercise();
+            ex.setExerciseName(name);
+            ex.setBodyPart(part);
+            exerciseRepository.save(ex);
+        }
     }
 }

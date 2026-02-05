@@ -2,62 +2,131 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8">
-  <title>筋トレ管理アプリ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"> <title>ダッシュボード</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="/css/style.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body class="bg-light">
+<body>
 
-<nav class="navbar navbar-dark bg-dark">
-  <div class="container-fluid">
-    <a class="navbar-brand" href="/">筋トレ管理アプリ</a>
-    <form th:action="@{/logout}" method="post">
-      <button class="btn btn-outline-light btn-sm" type="submit">ログアウト</button>
-    </form>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+  <div class="container">
+    <a class="navbar-brand fw-bold" href="/">筋トレ管理アプリ</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item"><a class="nav-link" href="/training/record">記録する</a></li>
+        <li class="nav-item"><a class="nav-link" href="/training/history">履歴</a></li>
+        <li class="nav-item">
+          <form th:action="@{/logout}" method="post" class="d-inline">
+            <button class="btn nav-link border-0 bg-transparent" type="submit">ログアウト</button>
+          </form>
+        </li>
+      </ul>
+    </div>
   </div>
 </nav>
 
 <div class="container mt-4">
-  <h2 class="mb-4">ようこそ、<span th:text="${#authentication.name}">ユーザー</span>さん</h2>
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="h4 fw-bold mb-0">ようこそ  <span th:text="${#authentication.name}">User</span> さん</h2>
+  </div>
 
-  <div class="row">
-    <div class="col-md-8">
-      <div class="card mb-3">
-        <div class="card-header">最近のトレーニング</div>
-        <div class="card-body">
-          <ul class="list-group list-group-flush" th:if="${not #lists.isEmpty(recentHistory)}">
-            <li class="list-group-item" th:each="h : ${recentHistory}">
-              <span class="badge bg-primary me-2" th:text="${h.memo.training.trainingDay}">日付</span>
-              <strong th:text="${h.memo.exercise.exerciseName}">種目</strong>
-              <span class="ms-2">
-                                <span th:text="${h.weight}">60</span>kg x
-                                <span th:text="${h.rep}">10</span>回 x
-                                <span th:text="${h.setCount}">3</span>セット
-                            </span>
-            </li>
-          </ul>
-          <p class="text-muted mt-3 text-center" th:if="${#lists.isEmpty(recentHistory)}">
-            まだ履歴がありません。
-          </p>
-
-          <div class="d-grid gap-2 mt-3">
-            <a href="/training/record" class="btn btn-primary">今日のトレーニングを記録する</a>
-            <a href="/training/history" class="btn btn-outline-secondary">すべての履歴を見る</a>
-          </div>
-        </div>
-      </div>
+  <div class="row g-4"> <div class="col-lg-8 col-md-12">
+    <div class="d-grid gap-2 mb-4">
+      <a href="/training/record" class="btn btn-primary btn-lg py-3 shadow-sm">
+        <span class="fs-4">🏋️ 今日のトレーニングを記録</span>
+      </a>
     </div>
 
-    <div class="col-md-4">
-      <div class="card mb-3 border-primary">
-        <div class="card-header bg-primary text-white">本日の総負荷量</div>
-        <div class="card-body text-center">
-          <h3 class="display-4" th:text="${totalLoad} + ' kg'">0 kg</h3>
-          <p class="text-muted">今日も積み上げましょう！</p>
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>📊 ボリューム推移</span>
+        <small class="text-muted">過去1週間</small>
+      </div>
+      <div class="card-body">
+        <canvas id="loadChart" style="max-height: 300px;"></canvas>
+      </div>
+    </div>
+  </div>
+
+    <div class="col-lg-4 col-md-12">
+
+      <div class="card text-center mb-4">
+        <div class="card-header bg-dark text-white border-0">
+          本日の総負荷量
+        </div>
+        <div class="card-body">
+          <h3 class="display-3 fw-bold my-2" th:text="${totalLoad}">0</h3>
+          <span class="text-muted fs-5">kg</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          🕒 最近の履歴
+        </div>
+        <ul class="list-group list-group-flush" th:if="${not #lists.isEmpty(recentHistory)}">
+          <li class="list-group-item" th:each="h : ${recentHistory}">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <small class="text-muted d-block" th:text="${h.memo.training.trainingDay}">Date</small>
+                <strong th:text="${h.memo.exercise.exerciseName}">種目</strong>
+              </div>
+              <div class="text-end">
+                        <span class="badge bg-light text-dark border">
+                            <span th:text="${h.weight}">60</span>kg
+                        </span>
+                <div class="small mt-1">
+                  <span th:text="${h.rep}">10</span>rep × <span th:text="${h.setCount}">3</span>set
+                </div>
+              </div>
+            </div>
+          </li>
+        </ul>
+        <div class="card-body text-center" th:if="${#lists.isEmpty(recentHistory)}">
+          <p class="text-muted">まだ履歴がありません</p>
+        </div>
+        <div class="card-footer bg-white text-center border-0">
+          <a href="/training/history" class="btn btn-outline-secondary btn-sm w-100">全ての履歴を見る</a>
         </div>
       </div>
     </div>
   </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/main.js"></script>
+<script th:inline="javascript">
+  const ctx = document.getElementById('loadChart').getContext('2d');
+  const labels = /*[[${chartLabels}]]*/ [];
+  const dataValues = /*[[${chartValues}]]*/ [];
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Volume (kg)',
+        data: dataValues,
+        borderColor: '#0d6efd',
+        backgroundColor: 'rgba(13, 110, 253, 0.1)',
+        borderWidth: 2,
+        pointRadius: 4,
+        tension: 0.1,
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, grid: { borderDash: [2, 4] } }, x: { grid: { display: false } } }
+    }
+  });
+</script>
 
 </body>
 </html>
