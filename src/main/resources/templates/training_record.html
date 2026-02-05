@@ -30,13 +30,16 @@
 
                 <div class="mb-3">
                     <label for="exerciseId" class="form-label">種目</label>
-                    <select class="form-select" th:field="*{exerciseId}">
-                        <option value="" selected>種目を選択してください</option>
-                        <option th:each="ex : ${exercises}"
-                                th:value="${ex.exerciseId}"
-                                th:text="${ex.exerciseName}">
-                        </option>
-                    </select>
+                    <div class="input-group">
+                        <select class="form-select" th:field="*{exerciseId}" required>
+                            <option value="" selected>種目を選択してください</option>
+                            <option th:each="ex : ${exercises}"
+                                    th:value="${ex.exerciseId}"
+                                    th:text="${ex.exerciseName}">
+                            </option>
+                        </select>
+                        <a href="/exercises/add" class="btn btn-outline-secondary" type="button">＋種目を新規追加</a>
+                    </div>
                 </div>
 
                 <div class="row g-3">

@@ -8,6 +8,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -19,20 +22,14 @@ public class TrainingService {
     private final ExerciseRepository exerciseRepository;
     private final UsersRepository usersRepository;
 
-    // 画面から受け取ったフォームデータを使って保存するメソッド
-    @Transactional // 途中でエラーが出たら全部取り消してくれる（データの整合性を保つ）
+    @Transactional
     public void recordTraining(TrainingForm form, String userId) {
-
-        // 1. ログイン中のユーザーを取得
-        // ★変更：固定の "user" ではなく、引数の userId を使う
         Users user = usersRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("ユーザーが見つかりません"));
 
-        // 2. 種目を取得
         Exercise exercise = exerciseRepository.findById(form.getExerciseId())
                 .orElseThrow(() -> new IllegalArgumentException("種目が見つかりません"));
 
-        // ... (以下は変更なし) ...
         Training training = new Training();
         training.setUser(user);
         training.setTrainingDay(form.getTrainingDate());
@@ -52,21 +49,33 @@ public class TrainingService {
         trainingDetailRepository.save(detail);
     }
 
-    // ★追加：指定した日付の総負荷量を取得する
     public Long getDailyTotalLoad(String userId, LocalDate date) {
         Long total = trainingDetailRepository.sumTotalLoad(userId, date);
-        // データがない場合(null)は0を返す
         return (total != null) ? total : 0L;
     }
 
-    // ★追加：最近のトレーニング履歴を少しだけ取得する（ホーム画面用）
-    public java.util.List<TrainingDetail> getRecentHistory(String userId) {
-        // 本来はSQLで絞り込むべきですが、今回は簡易的に全件取得してJavaでフィルタします
+    public List<TrainingDetail> getRecentHistory(String userId) {
         return trainingDetailRepository.findAll().stream()
                 .filter(d -> d.getMemo().getTraining().getUser().getUserId().equals(userId))
                 .sorted((d1, d2) -> d2.getMemo().getTraining().getTrainingDay()
-                        .compareTo(d1.getMemo().getTraining().getTrainingDay())) // 日付の新しい順
-                .limit(5) // 最新5件だけ
+                        .compareTo(d1.getMemo().getTraining().getTrainingDay()))
+                .limit(5)
                 .toList();
+    }
+
+    // ★追加：グラフ描画用のデータ整形メソッド
+    public Map<String, List<?>> getChartData(String userId) {
+        LocalDate weekAgo = LocalDate.now().minusDays(7);
+        List<Map<String, Object>> rawData = trainingDetailRepository.getTotalLoadHistory(userId, weekAgo);
+
+        List<String> labels = rawData.stream()
+                .map(m -> m.get("date").toString())
+                .collect(Collectors.toList());
+
+        List<Long> values = rawData.stream()
+                .map(m -> (Long) m.get("total"))
+                .collect(Collectors.toList());
+
+        return Map.of("labels", labels, "values", values);
     }
 }

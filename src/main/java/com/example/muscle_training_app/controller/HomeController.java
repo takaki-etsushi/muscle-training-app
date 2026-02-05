@@ -2,14 +2,14 @@ package com.example.muscle_training_app.controller;
 
 import com.example.muscle_training_app.service.TrainingService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
 import java.security.Principal;
 import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequiredArgsConstructor
@@ -19,18 +19,16 @@ public class HomeController {
 
     @GetMapping("/")
     public String showHome(Model model, Principal principal) {
-        // ログインしているユーザーのIDを取得
         String userId = principal.getName();
-
-        // 今日の日付を取得
         LocalDate today = LocalDate.now();
 
-        // 1. 今日の総負荷量を取得
-        Long totalLoad = trainingService.getDailyTotalLoad(userId, today);
-        model.addAttribute("totalLoad", totalLoad);
-
-        // 2. 最近の履歴を取得（カレンダーエリアに表示するため）
+        model.addAttribute("totalLoad", trainingService.getDailyTotalLoad(userId, today));
         model.addAttribute("recentHistory", trainingService.getRecentHistory(userId));
+
+        // ★追加：グラフ用データの取得とModelへの追加
+        Map<String, List<?>> chartData = trainingService.getChartData(userId);
+        model.addAttribute("chartLabels", chartData.get("labels"));
+        model.addAttribute("chartValues", chartData.get("values"));
 
         return "home";
     }
